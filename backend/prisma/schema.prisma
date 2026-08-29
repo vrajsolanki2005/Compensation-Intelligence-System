@@ -8,10 +8,10 @@ datasource db {
 }
 
 model Company {
-  id          Int      @id @default(autoincrement())
-  name        String
-  normalizedName String @unique
-  website     String?
+  id             Int     @id @default(autoincrement())
+  name           String
+  normalizedName String  @unique
+  website        String?
 
   compensationRecords CompensationRecord[]
 
@@ -20,8 +20,8 @@ model Company {
 }
 
 model Role {
-  id          Int      @id @default(autoincrement())
-  name        String
+  id             Int    @id @default(autoincrement())
+  name           String
   normalizedName String @unique
 
   compensationRecords CompensationRecord[]
@@ -31,9 +31,9 @@ model Role {
 }
 
 model Level {
-  id          Int      @id @default(autoincrement())
-  name        String
-  rank        Int
+  id   Int    @id @default(autoincrement())
+  name String
+  rank Int
 
   compensationRecords CompensationRecord[]
 
@@ -42,10 +42,10 @@ model Level {
 }
 
 model Location {
-  id        Int    @id @default(autoincrement())
-  city      String
-  country   String
-  currency  String
+  id       Int    @id @default(autoincrement())
+  city     String
+  country  String
+  currency String
 
   compensationRecords CompensationRecord[]
 
@@ -63,16 +63,16 @@ model CompensationRecord {
   levelId    Int
   locationId Int
 
-  company Company  @relation(fields: [companyId], references: [id])
-  role    Role     @relation(fields: [roleId], references: [id])
-  level   Level    @relation(fields: [levelId], references: [id])
+  company  Company  @relation(fields: [companyId], references: [id])
+  role     Role     @relation(fields: [roleId], references: [id])
+  level    Level    @relation(fields: [levelId], references: [id])
   location Location @relation(fields: [locationId], references: [id])
 
   experienceYears Int
 
-  baseSalary     Float
-  bonus          Float @default(0)
-  equity         Float @default(0)
+  baseSalary        Float
+  bonus             Float @default(0)
+  equity            Float @default(0)
   totalCompensation Float
 
   compensationYear Int
@@ -82,6 +82,7 @@ model CompensationRecord {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([companyId, roleId, levelId, locationId, experienceYears, compensationYear, baseSalary, bonus, equity])
   @@index([companyId])
   @@index([roleId])
   @@index([levelId])

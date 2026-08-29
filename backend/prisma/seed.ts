@@ -29,12 +29,12 @@ async function main() {
   for (const name of companyNames) {
     const comapny = await prisma.company.upsert({
       where: {
-        normalizeName: normalize(name),
+        normalizedName: normalize(name),
       },
       update: {},
       create: {
         name,
-        normalizeName: normalize(name),
+        normalizedName: normalize(name),
       },
     });
     companies.push(comapny);
