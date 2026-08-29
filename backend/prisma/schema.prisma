@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id          Int      @id @default(autoincrement())
+  name        String
+  normalizedName String @unique
+  website     String?
+
+  compensationRecords CompensationRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Role {
+  id          Int      @id @default(autoincrement())
+  name        String
+  normalizedName String @unique
+
+  compensationRecords CompensationRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Level {
+  id          Int      @id @default(autoincrement())
+  name        String
+  rank        Int
+
+  compensationRecords CompensationRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Location {
+  id        Int    @id @default(autoincrement())
+  city      String
+  country   String
+  currency  String
+
+  compensationRecords CompensationRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([city, country])
+}
+
+model CompensationRecord {
+  id Int @id @default(autoincrement())
+
+  companyId  Int
+  roleId     Int
+  levelId    Int
+  locationId Int
+
+  company Company  @relation(fields: [companyId], references: [id])
+  role    Role     @relation(fields: [roleId], references: [id])
+  level   Level    @relation(fields: [levelId], references: [id])
+  location Location @relation(fields: [locationId], references: [id])
+
+  experienceYears Int
+
+  baseSalary     Float
+  bonus          Float @default(0)
+  equity         Float @default(0)
+  totalCompensation Float
+
+  compensationYear Int
+
+  verified Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([roleId])
+  @@index([levelId])
+  @@index([locationId])
+  @@index([totalCompensation])
+  @@index([compensationYear])
+}
