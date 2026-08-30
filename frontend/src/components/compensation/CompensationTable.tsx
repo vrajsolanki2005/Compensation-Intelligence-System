@@ -25,16 +25,12 @@ const SORTABLE = [
 
 // CompensationTable.tsx
 function SortArrow({ active, dir }: { active: boolean; dir?: "asc" | "desc" }) {
-  return (
-    <span>
-      {active && dir === "asc" ? "↑" : active && dir === "desc" ? "↓" : ""}
-    </span>
-  );
+  if (!active) {
+    return <span aria-hidden="true" />;
+  }
+
+  return <span aria-hidden="true">{dir === "asc" ? "↑" : "↓"}</span>;
 }
-
-
-
-
 
 export function CompensationTable({
   records,
@@ -47,7 +43,10 @@ export function CompensationTable({
   showExperience = true,
 }: CompensationTableProps) {
   const minWidth =
-    560 + (showCompany ? 150 : 0) + (showRole ? 140 : 0) + (showLocation ? 120 : 0);
+    560 +
+    (showCompany ? 150 : 0) +
+    (showRole ? 140 : 0) +
+    (showLocation ? 120 : 0);
   const cell = "py-2.5 pr-4 text-right fig whitespace-nowrap";
 
   return (
@@ -56,23 +55,42 @@ export function CompensationTable({
         <thead>
           <tr className="border-b border-line text-xs text-muted">
             {showCompany && (
-              <th scope="col" className="px-4 py-2.5 text-left font-normal sm:px-5">
+              <th
+                scope="col"
+                className="px-4 py-2.5 text-left font-normal sm:px-5"
+              >
                 Company
               </th>
             )}
-            {showRole && <th scope="col" className="py-2.5 pr-4 text-left font-normal">Role</th>}
-            <th scope="col" className="py-2.5 pr-4 text-left font-normal">Level</th>
-            {showLocation && (
-              <th scope="col" className="py-2.5 pr-4 text-left font-normal">Location</th>
+            {showRole && (
+              <th scope="col" className="py-2.5 pr-4 text-left font-normal">
+                Role
+              </th>
             )}
-            {SORTABLE.filter((c) => c.field !== "experience" || showExperience).map((c) => {
+            <th scope="col" className="py-2.5 pr-4 text-left font-normal">
+              Level
+            </th>
+            {showLocation && (
+              <th scope="col" className="py-2.5 pr-4 text-left font-normal">
+                Location
+              </th>
+            )}
+            {SORTABLE.filter(
+              (c) => c.field !== "experience" || showExperience,
+            ).map((c) => {
               const active = sort === c.field;
               return (
                 <th
                   key={c.field}
                   scope="col"
                   className="py-2.5 pr-4 text-right font-normal"
-                  aria-sort={active ? (order === "asc" ? "ascending" : "descending") : "none"}
+                  aria-sort={
+                    active
+                      ? order === "asc"
+                        ? "ascending"
+                        : "descending"
+                      : "none"
+                  }
                 >
                   <button
                     type="button"
@@ -82,7 +100,10 @@ export function CompensationTable({
                     }`}
                   >
                     {c.label}
-                    <SortArrow active={active} dir={active ? order : undefined} />
+                    <SortArrow
+                      active={active}
+                      dir={active ? order : undefined}
+                    />
                   </button>
                 </th>
               );
@@ -91,7 +112,10 @@ export function CompensationTable({
         </thead>
         <tbody>
           {records.map((r) => (
-            <tr key={r.id} className="border-b border-line/50 last:border-0 hover:bg-paper/70">
+            <tr
+              key={r.id}
+              className="border-b border-line/50 last:border-0 hover:bg-paper/70"
+            >
               {showCompany && (
                 <td className="max-w-[220px] px-4 py-2.5 sm:px-5">
                   <Link
@@ -103,20 +127,35 @@ export function CompensationTable({
                   </Link>
                 </td>
               )}
-              {showRole && <td className="whitespace-nowrap py-2.5 pr-4 text-body">{r.roleName}</td>}
+              {showRole && (
+                <td className="whitespace-nowrap py-2.5 pr-4 text-body">
+                  {r.roleName}
+                </td>
+              )}
               <td className="py-2.5 pr-4">
                 <LevelBadge name={r.levelName} />
               </td>
               {showLocation && (
-                <td className="whitespace-nowrap py-2.5 pr-4 text-muted">{r.locationName}</td>
+                <td className="whitespace-nowrap py-2.5 pr-4 text-muted">
+                  {r.locationName}
+                </td>
               )}
-              <td className={`${cell} text-body`} title={r.base > 0 ? formatFull(r.base) : undefined}>
+              <td
+                className={`${cell} text-body`}
+                title={r.base > 0 ? formatFull(r.base) : undefined}
+              >
                 {formatAmount(r.base)}
               </td>
-              <td className={`${cell} text-body`} title={r.bonus > 0 ? formatFull(r.bonus) : undefined}>
+              <td
+                className={`${cell} text-body`}
+                title={r.bonus > 0 ? formatFull(r.bonus) : undefined}
+              >
                 {formatAmount(r.bonus)}
               </td>
-              <td className={`${cell} text-body`} title={r.equity > 0 ? formatFull(r.equity) : undefined}>
+              <td
+                className={`${cell} text-body`}
+                title={r.equity > 0 ? formatFull(r.equity) : undefined}
+              >
                 {formatAmount(r.equity)}
               </td>
               <td
@@ -125,7 +164,11 @@ export function CompensationTable({
               >
                 {formatAmount(r.totalCompensation)}
               </td>
-              {showExperience && <td className={`${cell} text-muted`}>{formatExperience(r.experience)}</td>}
+              {showExperience && (
+                <td className={`${cell} text-muted`}>
+                  {formatExperience(r.experience)}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
