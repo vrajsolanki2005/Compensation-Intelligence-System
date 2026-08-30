@@ -35,6 +35,7 @@ function SortArrow({ active, dir }: { active: boolean; dir?: "asc" | "desc" }) {
 
 
 
+
 export function CompensationTable({
   records,
   sort,
