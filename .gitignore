@@ -36,3 +36,7 @@ Thumbs.db
 
 # Misc
 *.tgz
+
+node_modules
+dist
+.env

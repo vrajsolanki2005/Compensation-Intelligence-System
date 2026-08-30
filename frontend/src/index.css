@@ -1,0 +1,28 @@
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    @apply bg-paper text-ink font-sans;
+  }
+  :focus-visible {
+    outline: 2px solid #1d5c41;
+    outline-offset: 1px;
+  }
+}
+
+@layer utilities {
+  /* Money figures and level identifiers: tabular, monospaced. */
+  .fig {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+}
