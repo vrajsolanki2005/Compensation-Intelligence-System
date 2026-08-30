@@ -1,11 +1,13 @@
 import express from "express";
 import cors from "cors";
+import swaggerUi from "swagger-ui-express";
 import { errorHandler } from "./middleware/error.middleware";
 import compensationRoutes from "./routes/compensation.routes";
 import companyRoutes from "./routes/company.routes";
 import roleRoutes from "./routes/role.routes";
 import levelRoutes from "./routes/level.routes";
 import locationRoutes from "./routes/location.routes";
+import { swaggerSpec } from "./lib/swagger";
 
 const app = express();
 
@@ -18,6 +20,13 @@ app.get("/api/health", (_req, res) => {
     message: "Compensation Intelligence API is running",
   });
 });
+
+// Swagger UI — available at http://localhost:5000/api/docs
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customSiteTitle: "COMPINT API Docs",
+}));
+// Raw OpenAPI JSON spec
+app.get("/api/docs.json", (_req, res) => res.json(swaggerSpec));
 
 app.use("/api/compensation", compensationRoutes);
 app.use("/api/companies", companyRoutes);

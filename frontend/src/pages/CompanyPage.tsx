@@ -108,7 +108,7 @@ export default function CompanyPage() {
       <header className="border-b border-line pb-6">
         <h1 className="text-2xl font-semibold tracking-tight">{name}</h1>
         <p className="mt-1.5 text-[15px] text-muted">
-          Compensation benchmarks{company?.sector ? ` · ${company.sector}` : ""}
+          Compensation benchmarks{company?.website ? ` · ${company.website}` : ""}
         </p>
         <Link
           to={`/?companyId=${companyId}`}

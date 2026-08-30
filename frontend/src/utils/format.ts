@@ -1,6 +1,11 @@
-export function formatExperience(years: number | null): string {
-  if (years === null) return "—";
-  return Number.isInteger(years) ? `${years} yr` : `${years.toFixed(1)} yr`;
+export function formatExperience(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) {
+    return "—";
+  }
+
+  return Number.isInteger(value)
+    ? `${value} yr`
+    : `${value.toFixed(1)} yr`;
 }
 
 export function formatCount(n: number): string {

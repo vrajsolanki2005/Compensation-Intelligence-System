@@ -1,7 +1,7 @@
 export interface Company {
   id: number;
   name: string;
-  sector: string | null;
+  website: string | null; // was incorrectly `sector` — DB field is `website`
 }
 
 export interface Role {
@@ -38,10 +38,21 @@ export interface CompensationRecord {
   verified: boolean;
 }
 
+/** Generic envelope for list responses: `{ data: T[] }` */
+export interface ApiListResponse<T> {
+  data: T[];
+}
+
+/** Generic envelope for single-item responses: `{ data: T }` */
+export interface ApiItemResponse<T> {
+  data: T;
+}
+
 export interface Pagination {
   page: number;
   limit: number;
   total: number;
+  totalPages?: number;
 }
 
 export interface CompensationListResponse {
@@ -57,7 +68,7 @@ export interface Percentiles {
 }
 
 export interface CompensationSummary {
-  sampleCount: number;
+  count: number;
   base: Percentiles;
   bonus: Percentiles;
   equity: Percentiles;

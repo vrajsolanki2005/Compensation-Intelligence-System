@@ -1,12 +1,14 @@
 import { api } from "./client";
-import type { Company, CompanySummaryResponse } from "../types/compensation";
+import type { Company, CompanySummaryResponse, ApiItemResponse } from "../types/compensation";
 
 export async function getCompany(id: number): Promise<Company> {
-  return (await api.get<Company>(`/companies/${id}`)).data;
+  // Backend returns { success: true, data: company }; unwrap the inner data.
+  return (await api.get<ApiItemResponse<Company>>(`/companies/${id}`)).data.data;
 }
 
 export async function getCompanyCompensationSummary(
   id: number,
 ): Promise<CompanySummaryResponse> {
-  return (await api.get<CompanySummaryResponse>(`/companies/${id}/compensation-summary`)).data;
+  // Backend returns { success: true, data: { levels: [...] } }; unwrap the inner data.
+  return (await api.get<ApiItemResponse<CompanySummaryResponse>>(`/companies/${id}/compensation-summary`)).data.data;
 }

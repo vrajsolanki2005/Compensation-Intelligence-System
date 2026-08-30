@@ -34,7 +34,10 @@ export function FilterBar({ values, onChange, onReset }: FilterBarProps) {
     if (debouncedTc.min !== values.minTC || debouncedTc.max !== values.maxTC) {
       onChange({ minTC: debouncedTc.min, maxTC: debouncedTc.max });
     }
-  }, [debouncedTc.min, debouncedTc.max]); // push only when the debounce settles
+    // onChange is intentionally omitted — it's recreated every render and adding it
+    // would cause a loop. values.minTC/maxTC guard against stale comparisons after reset.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedTc.min, debouncedTc.max, values.minTC, values.maxTC]);
 
   const hasFilters = Object.values(values).some((v) => v !== "");
   const opts = (list: { id: number; name: string }[]) =>

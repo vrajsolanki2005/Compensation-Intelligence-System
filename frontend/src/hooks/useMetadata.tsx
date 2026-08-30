@@ -52,7 +52,7 @@ export function MetadataProvider({ children }: { children: ReactNode }) {
       const failures = results.filter(
         (r): r is PromiseRejectedResult => r.status === "rejected",
       );
-      failures.forEach((f, i) => {
+      failures.forEach((f) => {
         console.error(`Failed to load metadata from ${labels[results.indexOf(f)]}`, f.reason);
       });
 

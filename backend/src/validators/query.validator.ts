@@ -50,11 +50,11 @@ export const compensationQuerySchema =
 
     sort: z
       .enum([
-        "baseSalary",
+        "base",
         "bonus",
         "equity",
         "totalCompensation",
-        "experienceYears",
+        "experience",
       ])
       .default("totalCompensation"),
 

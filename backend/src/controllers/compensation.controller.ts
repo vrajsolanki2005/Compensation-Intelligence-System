@@ -4,6 +4,16 @@ import { compensationSchema } from "../validators/compensation.validator.js";
 import { createCompensation } from "../services/compensation.service.js";
 import { percentile } from "../utils/statistics.js";
 import { compensationQuerySchema } from "../validators/query.validator.js";
+
+/** Maps frontend-facing sort field names to their Prisma column equivalents. */
+const SORT_FIELD_MAP: Record<string, string> = {
+  base: "baseSalary",
+  experience: "experienceYears",
+  bonus: "bonus",
+  equity: "equity",
+  totalCompensation: "totalCompensation",
+};
+
 export async function getCompensation(req: Request, res: Response) {
   try {
     const parsed = compensationQuerySchema.safeParse(req.query);
@@ -34,18 +44,9 @@ export async function getCompensation(req: Request, res: Response) {
     const pageNumber = page;
     const limitNumber = limit;
     const skip = (pageNumber - 1) * limitNumber;
-    
 
-    const allowedSortFields = [
-      "baseSalary",
-      "bonus",
-      "equity",
-      "totalCompensation",
-      "experienceYears",
-    ];
-
-    const sortField=sort;
-    const sortOrder=order;
+    // Map frontend field name → DB column name for ORDER BY
+    const dbSortField = SORT_FIELD_MAP[sort] ?? "totalCompensation";
 
     const where = {
       ...(companyId ? { companyId: Number(companyId) } : {}),
@@ -98,7 +99,6 @@ export async function getCompensation(req: Request, res: Response) {
           bonus: true,
           equity: true,
           totalCompensation: true,
-          compensationYear: true,
           verified: true,
 
           company: {
@@ -128,13 +128,12 @@ export async function getCompensation(req: Request, res: Response) {
               id: true,
               city: true,
               country: true,
-              currency: true,
             },
           },
         },
 
         orderBy: {
-          [sortField]: sortOrder,
+          [dbSortField]: order,
         },
 
         skip,
@@ -146,10 +145,27 @@ export async function getCompensation(req: Request, res: Response) {
       }),
     ]);
 
-    return res.json({
-      success: true,
-      data: records,
+    // Transform raw Prisma records into the flat shape the frontend expects.
+    const transformed = records.map((r) => ({
+      id: r.id,
+      companyId: r.company.id,
+      companyName: r.company.name,
+      roleId: r.role.id,
+      roleName: r.role.name,
+      levelId: r.level.id,
+      levelName: r.level.name,
+      locationId: r.location.id,
+      locationName: `${r.location.city}, ${r.location.country}`,
+      base: r.baseSalary,
+      bonus: r.bonus,
+      equity: r.equity,
+      totalCompensation: r.totalCompensation,
+      experience: r.experienceYears,
+      verified: r.verified,
+    }));
 
+    return res.json({
+      data: transformed,
       pagination: {
         page: pageNumber,
         limit: limitNumber,
@@ -327,6 +343,8 @@ export async function compareCompensation(req: Request, res: Response) {
       grouped.set(record.companyId, existing);
     }
 
+    // Bug 2 fix: keys are named to match the frontend ComparisonRow type
+    // (base/bonus/equity/totalCompensation, not baseMedian/bonusMedian etc.)
     const comparison = Array.from(grouped.entries()).map(
       ([companyId, companyRecords]) => {
         const baseValues = companyRecords.map((record) => record.baseSalary);
@@ -341,24 +359,18 @@ export async function compareCompensation(req: Request, res: Response) {
 
         return {
           companyId,
-
           companyName: companyRecords[0].company.name,
-
           sampleCount: companyRecords.length,
-
-          baseMedian: Math.round(calculateMedian(baseValues)),
-
-          bonusMedian: Math.round(calculateMedian(bonusValues)),
-
-          equityMedian: Math.round(calculateMedian(equityValues)),
-
-          totalCompensationMedian: Math.round(calculateMedian(totalValues)),
+          base: Math.round(calculateMedian(baseValues)),
+          bonus: Math.round(calculateMedian(bonusValues)),
+          equity: Math.round(calculateMedian(equityValues)),
+          totalCompensation: Math.round(calculateMedian(totalValues)),
         };
       },
     );
 
     comparison.sort(
-      (a, b) => b.totalCompensationMedian - a.totalCompensationMedian,
+      (a, b) => b.totalCompensation - a.totalCompensation,
     );
 
     return res.json({
@@ -418,7 +430,8 @@ export async function getCompensationSummary(req: Request, res: Response) {
       return res.json({
         success: true,
         data: {
-          sampleCount: 0,
+          // Bug 3b fix: field renamed to `count` to match frontend CompensationSummary type
+          count: 0,
           base: {
             p25: 0,
             p50: 0,
@@ -466,7 +479,8 @@ export async function getCompensationSummary(req: Request, res: Response) {
       success: true,
 
       data: {
-        sampleCount: records.length,
+        // Bug 3b fix: field renamed to `count` to match frontend CompensationSummary type
+        count: records.length,
 
         base: createPercentiles(baseValues),
 
