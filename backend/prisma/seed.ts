@@ -177,45 +177,44 @@ async function main() {
     Gurugram: 0.95,
   };
 
-  for (const company of companies) {
-    for (const role of roles) {
-      for (const level of levels) {
-        for (const location of locations) {
-          const base =
-            baseByLevel[level.rank] *
-            companyMultiplier[company.name] *
-            roleMultiplier[role.name] *
-            locationMultiplier[location.city];
+  const records: any[] = [];
+
+for (const company of companies) {
+  for (const role of roles) {
+    for (const level of levels) {
+      for (const location of locations) {
+        for (let submission = 0; submission < 5; submission++) {
+          const variation = 0.9 + Math.random() * 0.2;
+          const base = baseByLevel[level.rank] *
+                       companyMultiplier[company.name] *
+                       roleMultiplier[role.name] *
+                       locationMultiplier[location.city] *
+                       variation;
 
           const bonus = base * 0.1;
           const equity = base * 0.2;
           const totalCompensation = base + bonus + equity;
 
-          await prisma.compensationRecord.create({
-            data: {
-              companyId: company.id,
-              roleId: role.id,
-              levelId: level.id,
-              locationId: location.id,
-
-              experienceYears: Math.max(1, level.rank * 2),
-
-              baseSalary: Math.round(base),
-              bonus: Math.round(bonus),
-              equity: Math.round(equity),
-              totalCompensation: Math.round(totalCompensation),
-
-              compensationYear: 2026,
-
-              verified: Math.random() > 0.3,
-            },
+          records.push({
+            companyId: company.id,
+            roleId: role.id,
+            levelId: level.id,
+            locationId: location.id,
+            experienceYears: Math.max(1, level.rank * 2 + submission - 2),
+            baseSalary: Math.round(base),
+            bonus: Math.round(bonus),
+            equity: Math.round(equity),
+            totalCompensation: Math.round(totalCompensation),
+            compensationYear: 2026,
+            verified: Math.random() > 0.3,
           });
         }
       }
     }
   }
+}
 
-  console.log("Database seeded successfully.");
+await prisma.compensationRecord.createMany({ data: records });
 }
 
 main()

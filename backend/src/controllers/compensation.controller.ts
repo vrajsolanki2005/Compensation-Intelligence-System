@@ -2,12 +2,20 @@ import { Request, Response } from "express";
 import { prisma } from "../lib/prisma.js";
 import { compensationSchema } from "../validators/compensation.validator.js";
 import { createCompensation } from "../services/compensation.service.js";
-
-export async function getCompensation(
-  req: Request,
-  res: Response
-) {
+import { percentile } from "../utils/statistics.js";
+import { compensationQuerySchema } from "../validators/query.validator.js";
+export async function getCompensation(req: Request, res: Response) {
   try {
+    const parsed = compensationQuerySchema.safeParse(req.query);
+
+    if (!parsed.success) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid query parameters",
+        errors: parsed.error.flatten(),
+      });
+    }
+
     const {
       companyId,
       roleId,
@@ -17,21 +25,16 @@ export async function getCompensation(
       maxTC,
       minExperience,
       maxExperience,
-      sort = "totalCompensation",
-      order = "desc",
-      page = "1",
-      limit = "20",
-    } = req.query;
+      sort,
+      order,
+      page,
+      limit,
+    } = parsed.data;
 
-    const pageNumber = Math.max(Number(page) || 1, 1);
-
-    const limitNumber = Math.min(
-      Math.max(Number(limit) || 20, 1),
-      100
-    );
-
-    const skip =
-      (pageNumber - 1) * limitNumber;
+    const pageNumber = page;
+    const limitNumber = limit;
+    const skip = (pageNumber - 1) * limitNumber;
+    
 
     const allowedSortFields = [
       "baseSalary",
@@ -41,126 +44,107 @@ export async function getCompensation(
       "experienceYears",
     ];
 
-    const sortField = allowedSortFields.includes(
-      String(sort)
-    )
-      ? String(sort)
-      : "totalCompensation";
-
-    const sortOrder =
-      order === "asc" ? "asc" : "desc";
+    const sortField=sort;
+    const sortOrder=order;
 
     const where = {
-      ...(companyId
-        ? { companyId: Number(companyId) }
-        : {}),
+      ...(companyId ? { companyId: Number(companyId) } : {}),
 
-      ...(roleId
-        ? { roleId: Number(roleId) }
-        : {}),
+      ...(roleId ? { roleId: Number(roleId) } : {}),
 
-      ...(levelId
-        ? { levelId: Number(levelId) }
-        : {}),
+      ...(levelId ? { levelId: Number(levelId) } : {}),
 
-      ...(locationId
-        ? { locationId: Number(locationId) }
-        : {}),
+      ...(locationId ? { locationId: Number(locationId) } : {}),
 
       ...(minTC
         ? {
             totalCompensation: {
               gte: Number(minTC),
-              ...(maxTC
-                ? { lte: Number(maxTC) }
-                : {}),
+              ...(maxTC ? { lte: Number(maxTC) } : {}),
             },
           }
         : maxTC
-        ? {
-            totalCompensation: {
-              lte: Number(maxTC),
-            },
-          }
-        : {}),
+          ? {
+              totalCompensation: {
+                lte: Number(maxTC),
+              },
+            }
+          : {}),
 
       ...(minExperience
         ? {
             experienceYears: {
               gte: Number(minExperience),
-              ...(maxExperience
-                ? { lte: Number(maxExperience) }
-                : {}),
+              ...(maxExperience ? { lte: Number(maxExperience) } : {}),
             },
           }
         : maxExperience
-        ? {
-            experienceYears: {
-              lte: Number(maxExperience),
-            },
-          }
-        : {}),
+          ? {
+              experienceYears: {
+                lte: Number(maxExperience),
+              },
+            }
+          : {}),
     };
 
-    const [records, total] =
-      await Promise.all([
-        prisma.compensationRecord.findMany({
-          where,
+    const [records, total] = await Promise.all([
+      prisma.compensationRecord.findMany({
+        where,
 
-          select: {
-            id: true,
-            experienceYears: true,
-            baseSalary: true,
-            bonus: true,
-            equity: true,
-            totalCompensation: true,
-            compensationYear: true,
-            verified: true,
+        select: {
+          id: true,
+          experienceYears: true,
+          baseSalary: true,
+          bonus: true,
+          equity: true,
+          totalCompensation: true,
+          compensationYear: true,
+          verified: true,
 
-            company: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-
-            role: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-
-            level: {
-              select: {
-                id: true,
-                name: true,
-                rank: true,
-              },
-            },
-
-            location: {
-              select: {
-                id: true,
-                city: true,
-                country: true,
-                currency: true,
-              },
+          company: {
+            select: {
+              id: true,
+              name: true,
             },
           },
 
-          orderBy: {
-            [sortField]: sortOrder,
+          role: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
 
-          skip,
-          take: limitNumber,
-        }),
+          level: {
+            select: {
+              id: true,
+              name: true,
+              rank: true,
+            },
+          },
 
-        prisma.compensationRecord.count({
-          where,
-        }),
-      ]);
+          location: {
+            select: {
+              id: true,
+              city: true,
+              country: true,
+              currency: true,
+            },
+          },
+        },
+
+        orderBy: {
+          [sortField]: sortOrder,
+        },
+
+        skip,
+        take: limitNumber,
+      }),
+
+      prisma.compensationRecord.count({
+        where,
+      }),
+    ]);
 
     return res.json({
       success: true,
@@ -170,9 +154,7 @@ export async function getCompensation(
         page: pageNumber,
         limit: limitNumber,
         total,
-        totalPages: Math.ceil(
-          total / limitNumber
-        ),
+        totalPages: Math.ceil(total / limitNumber),
       },
     });
   } catch (error) {
@@ -180,16 +162,12 @@ export async function getCompensation(
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to fetch compensation data",
+      message: "Failed to fetch compensation data",
     });
   }
 }
 
-export async function getCompensationById(
-  req: Request,
-  res: Response
-) {
+export async function getCompensationById(req: Request, res: Response) {
   try {
     const id = Number(req.params.id);
 
@@ -232,13 +210,9 @@ export async function getCompensationById(
   }
 }
 
-export async function createCompensationRecord(
-  req: Request,
-  res: Response
-) {
+export async function createCompensationRecord(req: Request, res: Response) {
   try {
-    const validation =
-      compensationSchema.safeParse(req.body);
+    const validation = compensationSchema.safeParse(req.body);
 
     if (!validation.success) {
       return res.status(400).json({
@@ -248,15 +222,11 @@ export async function createCompensationRecord(
       });
     }
 
-    const record =
-      await createCompensation(
-        validation.data
-      );
+    const record = await createCompensation(validation.data);
 
     return res.status(201).json({
       success: true,
-      message:
-        "Compensation record created successfully",
+      message: "Compensation record created successfully",
       data: record,
     });
   } catch (error) {
@@ -279,10 +249,7 @@ export async function createCompensationRecord(
       });
     }
 
-    if (
-      message ===
-      "Duplicate compensation record"
-    ) {
+    if (message === "Duplicate compensation record") {
       return res.status(409).json({
         success: false,
         message,
@@ -291,164 +258,107 @@ export async function createCompensationRecord(
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to create compensation record",
+      message: "Failed to create compensation record",
     });
   }
 }
 
-function calculateMedian(
-  values: number[]
-) {
+function calculateMedian(values: number[]) {
   if (values.length === 0) {
     return 0;
   }
 
-  const sorted = [...values].sort(
-    (a, b) => a - b
-  );
+  const sorted = [...values].sort((a, b) => a - b);
 
-  const middle =
-    Math.floor(sorted.length / 2);
+  const middle = Math.floor(sorted.length / 2);
 
   if (sorted.length % 2 === 0) {
-    return (
-      (sorted[middle - 1] +
-        sorted[middle]) /
-      2
-    );
+    return (sorted[middle - 1] + sorted[middle]) / 2;
   }
 
   return sorted[middle];
 }
 
-export async function compareCompensation(
-  req: Request,
-  res: Response
-) {
+export async function compareCompensation(req: Request, res: Response) {
   try {
-    const {
-      roleId,
-      levelId,
-      locationId,
-      companyIds,
-    } = req.query;
+    const { roleId, levelId, locationId, companyIds } = req.query;
 
     if (!roleId || !levelId || !locationId) {
       return res.status(400).json({
         success: false,
-        message:
-          "roleId, levelId and locationId are required",
+        message: "roleId, levelId and locationId are required",
       });
     }
 
     const companyIdList = companyIds
-      ? String(companyIds)
-          .split(",")
-          .map(Number)
-          .filter(Boolean)
+      ? String(companyIds).split(",").map(Number).filter(Boolean)
       : [];
 
-    const records =
-      await prisma.compensationRecord.findMany({
-        where: {
-          roleId: Number(roleId),
-          levelId: Number(levelId),
-          locationId: Number(locationId),
+    const records = await prisma.compensationRecord.findMany({
+      where: {
+        roleId: Number(roleId),
+        levelId: Number(levelId),
+        locationId: Number(locationId),
 
-          ...(companyIdList.length > 0
-            ? {
-                companyId: {
-                  in: companyIdList,
-                },
-              }
-            : {}),
-        },
+        ...(companyIdList.length > 0
+          ? {
+              companyId: {
+                in: companyIdList,
+              },
+            }
+          : {}),
+      },
 
-        include: {
-          company: true,
-          role: true,
-          level: true,
-          location: true,
-        },
-      });
+      include: {
+        company: true,
+        role: true,
+        level: true,
+        location: true,
+      },
+    });
 
-    const grouped = new Map<
-      number,
-      typeof records
-    >();
+    const grouped = new Map<number, typeof records>();
 
     for (const record of records) {
-      const existing =
-        grouped.get(record.companyId) ?? [];
+      const existing = grouped.get(record.companyId) ?? [];
 
       existing.push(record);
 
-      grouped.set(
-        record.companyId,
-        existing
-      );
+      grouped.set(record.companyId, existing);
     }
 
-    const comparison = Array.from(
-      grouped.entries()
-    ).map(([companyId, companyRecords]) => {
-      const baseValues =
-        companyRecords.map(
-          (record) => record.baseSalary
+    const comparison = Array.from(grouped.entries()).map(
+      ([companyId, companyRecords]) => {
+        const baseValues = companyRecords.map((record) => record.baseSalary);
+
+        const bonusValues = companyRecords.map((record) => record.bonus);
+
+        const equityValues = companyRecords.map((record) => record.equity);
+
+        const totalValues = companyRecords.map(
+          (record) => record.totalCompensation,
         );
 
-      const bonusValues =
-        companyRecords.map(
-          (record) => record.bonus
-        );
+        return {
+          companyId,
 
-      const equityValues =
-        companyRecords.map(
-          (record) => record.equity
-        );
+          companyName: companyRecords[0].company.name,
 
-      const totalValues =
-        companyRecords.map(
-          (record) =>
-            record.totalCompensation
-        );
+          sampleCount: companyRecords.length,
 
-      return {
-        companyId,
+          baseMedian: Math.round(calculateMedian(baseValues)),
 
-        companyName:
-          companyRecords[0].company.name,
+          bonusMedian: Math.round(calculateMedian(bonusValues)),
 
-        sampleCount:
-          companyRecords.length,
+          equityMedian: Math.round(calculateMedian(equityValues)),
 
-        baseMedian:
-          Math.round(
-            calculateMedian(baseValues)
-          ),
-
-        bonusMedian:
-          Math.round(
-            calculateMedian(bonusValues)
-          ),
-
-        equityMedian:
-          Math.round(
-            calculateMedian(equityValues)
-          ),
-
-        totalCompensationMedian:
-          Math.round(
-            calculateMedian(totalValues)
-          ),
-      };
-    });
+          totalCompensationMedian: Math.round(calculateMedian(totalValues)),
+        };
+      },
+    );
 
     comparison.sort(
-      (a, b) =>
-        b.totalCompensationMedian -
-        a.totalCompensationMedian
+      (a, b) => b.totalCompensationMedian - a.totalCompensationMedian,
     );
 
     return res.json({
@@ -467,8 +377,112 @@ export async function compareCompensation(
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to compare compensation",
+      message: "Failed to compare compensation",
+    });
+  }
+}
+
+export async function getCompensationSummary(req: Request, res: Response) {
+  try {
+    const { companyId, roleId, levelId, locationId } = req.query;
+
+    if (!roleId || !levelId || !locationId) {
+      return res.status(400).json({
+        success: false,
+        message: "roleId, levelId and locationId are required",
+      });
+    }
+
+    const records = await prisma.compensationRecord.findMany({
+      where: {
+        roleId: Number(roleId),
+        levelId: Number(levelId),
+        locationId: Number(locationId),
+
+        ...(companyId
+          ? {
+              companyId: Number(companyId),
+            }
+          : {}),
+      },
+
+      select: {
+        baseSalary: true,
+        bonus: true,
+        equity: true,
+        totalCompensation: true,
+      },
+    });
+
+    if (records.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          sampleCount: 0,
+          base: {
+            p25: 0,
+            p50: 0,
+            p75: 0,
+            p90: 0,
+          },
+          bonus: {
+            p25: 0,
+            p50: 0,
+            p75: 0,
+            p90: 0,
+          },
+          equity: {
+            p25: 0,
+            p50: 0,
+            p75: 0,
+            p90: 0,
+          },
+          totalCompensation: {
+            p25: 0,
+            p50: 0,
+            p75: 0,
+            p90: 0,
+          },
+        },
+      });
+    }
+
+    const baseValues = records.map((r) => r.baseSalary);
+
+    const bonusValues = records.map((r) => r.bonus);
+
+    const equityValues = records.map((r) => r.equity);
+
+    const totalValues = records.map((r) => r.totalCompensation);
+
+    const createPercentiles = (values: number[]) => ({
+      p25: Math.round(percentile(values, 25)),
+      p50: Math.round(percentile(values, 50)),
+      p75: Math.round(percentile(values, 75)),
+      p90: Math.round(percentile(values, 90)),
+    });
+
+    return res.json({
+      success: true,
+
+      data: {
+        sampleCount: records.length,
+
+        base: createPercentiles(baseValues),
+
+        bonus: createPercentiles(bonusValues),
+
+        equity: createPercentiles(equityValues),
+
+        totalCompensation: createPercentiles(totalValues),
+      },
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to calculate compensation summary",
     });
   }
 }
