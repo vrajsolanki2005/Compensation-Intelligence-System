@@ -23,14 +23,17 @@ const SORTABLE = [
   { field: "experience", label: "Experience" },
 ] as const;
 
+// CompensationTable.tsx
 function SortArrow({ active, dir }: { active: boolean; dir?: "asc" | "desc" }) {
   return (
-    <svg width="8" height="10" viewBox="0 0 8 10" aria-hidden="true" className="shrink-0">
-      <path d="M4 0.5 6.5 3.5h-5z" fill={dir === "asc" ? "#1D5C41" : "#C9C3B6"} />
-      <path d="M4 9.5 1.5 6.5h5z" fill={dir === "desc" ? "#1D5C41" : "#C9C3B6"} />
-    </svg>
+    <span>
+      {active && dir === "asc" ? "↑" : active && dir === "desc" ? "↓" : ""}
+    </span>
   );
 }
+
+
+
 
 export function CompensationTable({
   records,

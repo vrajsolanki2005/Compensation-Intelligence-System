@@ -17,8 +17,9 @@ import { TableSkeleton } from "../components/common/Skeleton";
 import { Pagination } from "../components/common/Pagination";
 import { PageContainer, Section } from "../components/layout/PageContainer";
 import type { Company, CompanyLevelSummary } from "../types/compensation";
-import { formatCompact, formatFull } from "../utils/currency";
+import { formatCompact } from "../utils/currency";
 import { formatCount, formatRange } from "../utils/format";
+
 
 const TABLE_LIMIT = 15;
 
