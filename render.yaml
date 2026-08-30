@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: compint-backend
+    runtime: node
+    region: singapore          # closest to India; change to ohio/oregon if preferred
+    plan: free                 # upgrade to starter for always-on
+    rootDir: backend           # monorepo: build only the backend folder
+
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+
+    envVars:
+      # --- Required: set these in the Render dashboard (mark as secret) ---
+      - key: DATABASE_URL
+        sync: false            # pooled Supabase URL  (port 6543, Transaction mode)
+
+      - key: DIRECT_URL
+        sync: false            # direct Supabase URL  (port 5432, Session mode)
+
+      # --- Auto-set ---
+      - key: NODE_ENV
+        value: production
+
+      - key: PORT
+        value: 5000
