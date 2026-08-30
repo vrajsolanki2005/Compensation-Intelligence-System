@@ -1,8 +1,14 @@
 import { Router } from "express";
-import { getCompanies } from "../controllers/company.controller";
+
+import {
+  getCompanies,
+  getCompanyById,
+} from "../controllers/company.controller";
 
 const router = Router();
 
 router.get("/", getCompanies);
+
+router.get("/:id", getCompanyById);
 
 export default router;
