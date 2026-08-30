@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../lib/prisma.js";
+import { compensationSchema } from "../validators/compensation.validator.js";
+import { createCompensation } from "../services/compensation.service.js";
 
 export async function getCompensation(
   req: Request,
@@ -136,6 +138,71 @@ export async function getCompensationById(
     res.status(500).json({
       success: false,
       message: "Failed to fetch compensation record",
+    });
+  }
+}
+
+export async function createCompensationRecord(
+  req: Request,
+  res: Response
+) {
+  try {
+    const validation =
+      compensationSchema.safeParse(req.body);
+
+    if (!validation.success) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid compensation data",
+        errors: validation.error.flatten(),
+      });
+    }
+
+    const record =
+      await createCompensation(
+        validation.data
+      );
+
+    return res.status(201).json({
+      success: true,
+      message:
+        "Compensation record created successfully",
+      data: record,
+    });
+  } catch (error) {
+    console.error(error);
+
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to create compensation record";
+
+    if (
+      message === "Company not found" ||
+      message === "Role not found" ||
+      message === "Level not found" ||
+      message === "Location not found"
+    ) {
+      return res.status(404).json({
+        success: false,
+        message,
+      });
+    }
+
+    if (
+      message ===
+      "Duplicate compensation record"
+    ) {
+      return res.status(409).json({
+        success: false,
+        message,
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to create compensation record",
     });
   }
 }

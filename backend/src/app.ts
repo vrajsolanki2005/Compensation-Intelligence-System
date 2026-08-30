@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-
+import { errorHandler } from "./middleware/error.middleware";
 import compensationRoutes from "./routes/compensation.routes";
 import companyRoutes from "./routes/company.routes";
 import roleRoutes from "./routes/role.routes";
@@ -24,5 +24,7 @@ app.use("/api/companies", companyRoutes);
 app.use("/api/roles", roleRoutes);
 app.use("/api/levels", levelRoutes);
 app.use("/api/locations", locationRoutes);
+
+app.use(errorHandler)
 
 export default app;
